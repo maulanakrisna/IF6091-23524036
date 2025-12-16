@@ -8,11 +8,11 @@ import seaborn as sns
 # CONFIG
 # ------------------------------
 st.set_page_config(
-    page_title="Dashboard Risiko Gangguan PLN",
+    page_title="Dashboard Risiko Gangguan Jaringan",
     layout="wide"
 )
 
-st.title("📊 Dashboard Risiko Gangguan Jaringan PLN")
+st.title("📊 Dashboard Risiko Gangguan Jaringan")
 st.caption("Analisis Risiko Berbasis Downtime, Frekuensi, dan Root Cause")
 
 # ------------------------------
@@ -20,7 +20,7 @@ st.caption("Analisis Risiko Berbasis Downtime, Frekuensi, dan Root Cause")
 # ------------------------------
 @st.cache_data
 def load_data():
-    return pd.read_csv("data/gangguan_pln.csv")
+    return pd.read_csv("df_analytics.csv")
 
 df = load_data()
 
