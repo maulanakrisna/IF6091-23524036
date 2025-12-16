@@ -164,4 +164,4 @@ st.pyplot(fig4)
 # ------------------------------
 # FOOTER
 # ------------------------------
-st.caption("© Kerja Praktik – Analisis Risiko Gangguan Jaringan PLN")
+st.caption("© Kerja Praktik – Analisis Risiko Gangguan Jaringan")
