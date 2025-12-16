@@ -2,177 +2,166 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 
-# =========================
+# ------------------------------
 # CONFIG
-# =========================
+# ------------------------------
 st.set_page_config(
-    page_title="Dashboard Gangguan Jaringan",
+    page_title="Dashboard Risiko Gangguan PLN",
     layout="wide"
 )
 
-# =========================
+st.title("📊 Dashboard Risiko Gangguan Jaringan PLN")
+st.caption("Analisis Risiko Berbasis Downtime, Frekuensi, dan Root Cause")
+
+# ------------------------------
 # LOAD DATA
-# =========================
+# ------------------------------
 @st.cache_data
 def load_data():
-    df = pd.read_csv(
-        "df_analytics.csv",
-        parse_dates=["Tiket Open"],
-    )
-    df["bulan"] = pd.PeriodIndex(df["bulan"], freq="M").astype(str)
-    return df
+    return pd.read_csv("data/gangguan_pln.csv")
 
 df = load_data()
 
-# =========================
+# ------------------------------
 # SIDEBAR FILTER
-# =========================
+# ------------------------------
 st.sidebar.header("🔎 Filter Data")
 
-bulan = st.sidebar.multiselect(
-    "Bulan",
-    sorted(df["bulan"].unique()),
-    default=sorted(df["bulan"].unique())
-)
-
-risiko = st.sidebar.multiselect(
+risk_filter = st.sidebar.multiselect(
     "Kategori Risiko",
-    df["kategori_risiko"].dropna().unique(),
-    default=df["kategori_risiko"].dropna().unique()
+    df['kategori_risiko'].dropna().unique(),
+    default=df['kategori_risiko'].dropna().unique()
 )
 
-produk = st.sidebar.multiselect(
-    "Produk",
-    df["Produk"].unique(),
-    default=df["Produk"].unique()
+jenis_filter = st.sidebar.multiselect(
+    "Jenis Gangguan",
+    df['Jenis Gangguan'].dropna().unique(),
+    default=df['Jenis Gangguan'].dropna().unique()
 )
 
-unit = st.sidebar.multiselect(
-    "Unit PLN",
-    df["Unit PLN Pengguna"].dropna().unique(),
-    default=df["Unit PLN Pengguna"].dropna().unique()
-)
-
-df_f = df[
-    (df["bulan"].isin(bulan)) &
-    (df["kategori_risiko"].isin(risiko)) &
-    (df["Produk"].isin(produk)) &
-    (df["Unit PLN Pengguna"].isin(unit))
+df_filt = df[
+    (df['kategori_risiko'].isin(risk_filter)) &
+    (df['Jenis Gangguan'].isin(jenis_filter))
 ]
 
-# =========================
-# KPI METRICS
-# =========================
-total_tiket = len(df_f)
-total_durasi = df_f["Durasi (Menit)"].sum() / 60
-avg_durasi = df_f["Durasi (Menit)"].mean()
-pct_high = (
-    (df_f["kategori_risiko"] == "High").sum() / total_tiket * 100
-    if total_tiket > 0 else 0
+# ------------------------------
+# KPI SECTION
+# ------------------------------
+col1, col2, col3 = st.columns(3)
+
+col1.metric(
+    "Total Downtime (Jam)",
+    round(df_filt['Durasi (Menit)'].sum() / 60, 2)
 )
 
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("🎫 Total Tiket", total_tiket)
-c2.metric("⏱️ Total Durasi (Jam)", f"{total_durasi:.1f}")
-c3.metric("📊 Rata-rata Durasi (Menit)", f"{avg_durasi:.1f}")
-c4.metric("🔥 High Risk (%)", f"{pct_high:.1f}%")
+col2.metric(
+    "Jumlah Gangguan",
+    len(df_filt)
+)
+
+col3.metric(
+    "Jumlah Lokasi Risiko",
+    df_filt['Lokasi_Risiko'].nunique()
+)
 
 st.divider()
 
-# =========================
-# CHART 1: TIKET PER BULAN
-# =========================
-st.subheader("📈 Jumlah Tiket per Bulan")
+# ------------------------------
+# TOP RISK LOCATION
+# ------------------------------
+st.subheader("🔥 Top 10 Lokasi Risiko Tertinggi")
 
-fig, ax = plt.subplots()
-df_f.groupby("bulan").size().plot(kind="bar", ax=ax)
-ax.set_ylabel("Jumlah Tiket")
-ax.set_xlabel("Bulan")
-st.pyplot(fig)
-
-# =========================
-# CHART 2: DISTRIBUSI RISIKO
-# =========================
-st.subheader("⚠️ Distribusi Kategori Risiko")
-
-fig, ax = plt.subplots()
-df_f["kategori_risiko"].value_counts().plot(
-    kind="pie",
-    autopct="%1.1f%%",
-    ax=ax
-)
-ax.set_ylabel("")
-st.pyplot(fig)
-
-# =========================
-# CHART 3: TOP PENYEBAB
-# =========================
-st.subheader("🧠 Top Penyebab Gangguan")
-
-top_penyebab = (
-    df_f["penyebab_norm"]
-    .value_counts()
+top_risk = (
+    df_filt.groupby('Lokasi_Risiko')['risk_score']
+    .mean()
+    .sort_values(ascending=False)
     .head(10)
 )
 
-fig, ax = plt.subplots()
-top_penyebab.plot(kind="barh", ax=ax)
-ax.set_xlabel("Jumlah Tiket")
-ax.invert_yaxis()
-st.pyplot(fig)
+fig1, ax1 = plt.subplots(figsize=(8, 4))
+ax1.barh(top_risk.index, top_risk.values)
+ax1.invert_yaxis()
+ax1.set_xlabel("Risk Score")
 
-# =========================
-# CHART 4: HEATMAP POP x RISIKO
-# =========================
-st.subheader("🌡️ Heatmap POP × Risiko")
+st.pyplot(fig1)
 
-pivot = pd.pivot_table(
-    df_f,
-    index="Lokasi_POP",
-    columns="kategori_risiko",
-    values="No Tiket",
-    aggfunc="count",
-    fill_value=0
+# ------------------------------
+# PARETO DOWNTIME
+# ------------------------------
+st.subheader("📊 Pareto Downtime (80/20)")
+
+pareto = (
+    df_filt.groupby('Lokasi_Risiko')['Durasi (Menit)']
+    .sum()
+    .sort_values(ascending=False)
 )
 
-fig, ax = plt.subplots(figsize=(8, 6))
-im = ax.imshow(pivot, aspect="auto")
-ax.set_yticks(range(len(pivot.index)))
-ax.set_yticklabels(pivot.index)
-ax.set_xticks(range(len(pivot.columns)))
-ax.set_xticklabels(pivot.columns)
-plt.colorbar(im, ax=ax)
-st.pyplot(fig)
+cum_pct = pareto.cumsum() / pareto.sum()
 
-# =========================
-# CHART 5: JARAK vs DURASI
-# =========================
-st.subheader("📍 Jarak Gangguan vs Durasi")
+fig2, ax2 = plt.subplots(figsize=(8, 4))
+ax2.plot(cum_pct.values)
+ax2.axhline(0.8)
+ax2.set_ylabel("Kumulatif Downtime")
+ax2.set_xlabel("Lokasi (Urut Risiko)")
+st.pyplot(fig2)
 
-fig, ax = plt.subplots()
-ax.scatter(
-    df_f["Lokasi_KM"],
-    df_f["Durasi (Menit)"],
-    alpha=0.6
+# ------------------------------
+# HEATMAP POP vs JENIS
+# ------------------------------
+st.subheader("📈 Heatmap POP – Jenis Gangguan")
+
+heatmap_data = (
+    df_filt.groupby(['Lokasi_POP', 'Jenis Gangguan'])
+    .size()
+    .unstack(fill_value=0)
 )
-ax.set_xlabel("Jarak (KM)")
-ax.set_ylabel("Durasi (Menit)")
-st.pyplot(fig)
 
-# =========================
-# DETAIL TABLE
-# =========================
-st.subheader("📋 Detail Tiket")
-
-st.dataframe(
-    df_f[
-        [
-            "No Tiket", "Produk", "Unit PLN Pengguna",
-            "Lokasi_POP", "Lokasi_KM",
-            "Durasi (Menit)", "kategori_risiko",
-            "penyebab_norm"
-        ]
-    ],
-    use_container_width=True
+fig3, ax3 = plt.subplots(figsize=(12, 6))
+sns.heatmap(
+    heatmap_data,
+    cmap="Reds",
+    linewidths=0.5,
+    ax=ax3
 )
+ax3.set_xlabel("Jenis Gangguan")
+ax3.set_ylabel("POP")
+
+st.pyplot(fig3)
+
+# ------------------------------
+# ROLLING RISK TREND
+# ------------------------------
+st.subheader("🧠 Tren Risiko (Rolling 3 Bulan)")
+
+df['Tiket Open'] = pd.to_datetime(df['Tiket Open'], errors='coerce')
+df['bulan'] = df['Tiket Open'].dt.to_period('M').astype(str)
+
+pop_selected = st.selectbox(
+    "Pilih POP",
+    df['Lokasi_POP'].dropna().unique()
+)
+
+trend = (
+    df[df['Lokasi_POP'] == pop_selected]
+    .groupby('bulan')['Durasi (Menit)']
+    .sum()
+    .reset_index()
+)
+
+trend['rolling_3m'] = trend['Durasi (Menit)'].rolling(3, min_periods=1).mean()
+
+fig4, ax4 = plt.subplots(figsize=(10, 4))
+ax4.plot(trend['bulan'], trend['rolling_3m'], marker='o')
+ax4.set_xlabel("Bulan")
+ax4.set_ylabel("Downtime (Menit)")
+ax4.set_title(f"Tren Downtime 3 Bulan – {pop_selected}")
+ax4.tick_params(axis='x', rotation=45)
+
+st.pyplot(fig4)
+
+# ------------------------------
+# FOOTER
+# ------------------------------
+st.caption("© Kerja Praktik – Analisis Risiko Gangguan Jaringan PLN")
