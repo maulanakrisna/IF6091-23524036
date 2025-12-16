@@ -69,24 +69,6 @@ col3.metric(
 st.divider()
 
 # ------------------------------
-# TOP RISK LOCATION
-# ------------------------------
-st.subheader("🔥 Top 10 Lokasi Risiko Tertinggi")
-
-top_risk = (
-    df_filt.groupby('Lokasi_Risiko')
-    .sort_values(ascending=False)
-    .head(10)
-)
-
-fig1, ax1 = plt.subplots(figsize=(8, 4))
-ax1.barh(top_risk.index, top_risk.values)
-ax1.invert_yaxis()
-ax1.set_xlabel("Risk Score")
-
-st.pyplot(fig1)
-
-# ------------------------------
 # PARETO DOWNTIME
 # ------------------------------
 st.subheader("📊 Pareto Downtime (80/20)")
