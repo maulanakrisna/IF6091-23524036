@@ -74,8 +74,7 @@ st.divider()
 st.subheader("🔥 Top 10 Lokasi Risiko Tertinggi")
 
 top_risk = (
-    df_filt.groupby('Lokasi_Risiko')['risk_score']
-    .mean()
+    df_filt.groupby('Lokasi_Risiko')
     .sort_values(ascending=False)
     .head(10)
 )
