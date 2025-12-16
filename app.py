@@ -88,28 +88,6 @@ ax2.set_ylabel("Kumulatif Downtime")
 ax2.set_xlabel("Lokasi (Urut Risiko)")
 st.pyplot(fig2)
 
-# ------------------------------
-# HEATMAP POP vs JENIS
-# ------------------------------
-st.subheader("📈 Heatmap POP – Jenis Gangguan")
-
-heatmap_data = (
-    df_filt.groupby(['Lokasi_POP', 'Jenis Gangguan'])
-    .size()
-    .unstack(fill_value=0)
-)
-
-fig3, ax3 = plt.subplots(figsize=(12, 6))
-sns.heatmap(
-    heatmap_data,
-    cmap="Reds",
-    linewidths=0.5,
-    ax=ax3
-)
-ax3.set_xlabel("Jenis Gangguan")
-ax3.set_ylabel("POP")
-
-st.pyplot(fig3)
 
 # ------------------------------
 # ROLLING RISK TREND
