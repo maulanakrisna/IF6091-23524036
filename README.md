@@ -37,7 +37,7 @@ Dataset berisi **2366 tiket gangguan** dengan atribut utama berikut:
 | ----------------- | ------------------------------------------- |
 | No Tiket          | ID unik tiket gangguan                      |
 | Produk            | Jenis layanan (IP VPN, VSAT, METRONET, dll) |
-| Unit PLN Pengguna | Unit PLN terdampak                          |
+| Unit Pengguna     | Unit terdampak                              |
 | Tiket Open        | Waktu mulai gangguan                        |
 | Tiket Close       | Waktu gangguan selesai                      |
 | Durasi (Menit)    | Total durasi gangguan                       |
@@ -56,7 +56,7 @@ Dataset berisi **2366 tiket gangguan** dengan atribut utama berikut:
 * Bulan
 * Kategori Risiko
 * Produk
-* Unit PLN
+* Unit
 
 ### 📌 KPI Utama
 
@@ -122,6 +122,7 @@ Beberapa pengembangan yang dapat dilakukan:
 
 ## 👤 Kontributor
 
+Maulana Krisna Adhitya
 Disusun untuk keperluan **Kerja Praktik**
 Bidang: **Data Science / Data Analytics**
 
@@ -129,8 +130,7 @@ Bidang: **Data Science / Data Analytics**
 
 ## 📄 Lisensi
 
-Proyek ini digunakan untuk keperluan **internal dan akademik**.
-Tidak diperkenankan distribusi data sensitif ke pihak eksternal.
+Proyek ini digunakan untuk keperluan **akademik**.
 
 ---
 
